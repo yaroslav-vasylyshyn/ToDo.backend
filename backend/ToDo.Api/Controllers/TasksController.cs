@@ -1,8 +1,10 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using ToDo.Core.Context;
 using ToDo.Core.Models;
+using ToDo.Infrastructure.DTO;
 
 namespace ToDo.Api.Controllers
 {
@@ -11,17 +13,20 @@ namespace ToDo.Api.Controllers
     public class TasksController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public TasksController(AppDbContext context)
+        public TasksController(AppDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var tasks = await _context.Tasks.ToListAsync();
-            return Ok(tasks);
+            var tasksDto = _mapper.Map<TaskDto>(tasks);
+            return Ok(tasksDto);
         }
 
         [HttpGet("{id}")]
@@ -32,12 +37,14 @@ namespace ToDo.Api.Controllers
             {
                 return NotFound();
             }
-            return Ok(task);
+            var taskDto = _mapper.Map<TaskDto>(task);
+            return Ok(taskDto);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Tasks task)
+        public async Task<IActionResult> Create([FromBody] CreateTaskDto createTaskDto)
         {
+            var task = _mapper.Map<Tasks>(createTaskDto);
             if (task == null)
             {
                 return BadRequest("Task is null");
@@ -56,12 +63,14 @@ namespace ToDo.Api.Controllers
 
                 return StatusCode(500, "An error occurred while saving the task. Please try again later.");
             }
-            return CreatedAtAction(nameof(GetById), new { id = task.Id }, task);
+            var taskDto = _mapper.Map<TaskDto>(task);
+            return CreatedAtAction(nameof(GetById), new { id = task.Id }, taskDto);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Tasks task)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskDto updateTaskDto)
         {
+            var task = _mapper.Map<Tasks>(updateTaskDto);
             var existingTask = await _context.Tasks.FindAsync(id);
             if (existingTask == null)
             {
