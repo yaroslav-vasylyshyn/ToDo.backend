@@ -12,19 +12,19 @@ namespace ToDo.Api.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ITasksRepository _tasksRepository;
         private readonly IMapper _mapper;
 
-        public TasksController(AppDbContext context, IMapper mapper)
+        public TasksController(ITasksRepository tasksRepository, IMapper mapper)
         {
-            _context = context;
+            _tasksRepository = tasksRepository;
             _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var tasks = await _context.Tasks.ToListAsync();
+            var tasks = await _tasksRepository.GetAllAsync();
             var tasksDto = _mapper.Map<List<TaskDto>>(tasks);
             return Ok(tasksDto);
         }
@@ -32,7 +32,7 @@ namespace ToDo.Api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var task = await _tasksRepository.GetByIdAsync(id);
             if (task == null)
             {
                 return NotFound();
@@ -51,8 +51,7 @@ namespace ToDo.Api.Controllers
             }
             try
             {
-                await _context.Tasks.AddAsync(task);
-                await _context.SaveChangesAsync();
+                await _tasksRepository.AddAsync(task);
             }
             catch (DbUpdateException ex)
             {
@@ -71,17 +70,23 @@ namespace ToDo.Api.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskDto updateTaskDto)
         {
             var task = _mapper.Map<Tasks>(updateTaskDto);
-            var existingTask = await _context.Tasks.FindAsync(id);
-            if (existingTask == null)
+            try
+            {
+                task = await _tasksRepository.UpdateAsync(id, task);
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("CHK_Status"))
+                {
+                    return BadRequest("Invalid Task Status. Allowed statuses: To do, In Progress, Done.");
+                }
+
+                return StatusCode(500, "An error occurred while saving the task. Please try again later.");
+            }
+            if (task == null)
             {
                 return NotFound();
             }
-            
-            existingTask.Name = task.Name;
-            existingTask.Status = task.Status;
-            existingTask.Description = task.Description;
-
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -89,14 +94,12 @@ namespace ToDo.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var task = await _tasksRepository.DeleteAsync(id);
             if (task == null)
             {
                 return NotFound();
             }
 
-            _context.Tasks.Remove(task);
-            await _context.SaveChangesAsync();
             return NoContent();
         }
     }
