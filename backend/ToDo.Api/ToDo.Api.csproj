@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../ToDo.Infrastructure/ToDo.Infrastructure.csproj" />
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
   </ItemGroup>
 
 </Project>

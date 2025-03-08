@@ -25,7 +25,7 @@ namespace ToDo.Api.Controllers
         public async Task<IActionResult> GetAll()
         {
             var tasks = await _context.Tasks.ToListAsync();
-            var tasksDto = _mapper.Map<TaskDto>(tasks);
+            var tasksDto = _mapper.Map<List<TaskDto>>(tasks);
             return Ok(tasksDto);
         }
 
