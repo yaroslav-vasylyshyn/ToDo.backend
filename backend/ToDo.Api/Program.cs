@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ToDo.Core.Context;
 using ToDo.Infrastructure.Mappings;
+using ToDo.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddScoped<ITasksRepository, TasksRepository>();
 
 var app = builder.Build();
 
