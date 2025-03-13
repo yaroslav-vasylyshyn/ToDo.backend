@@ -12,10 +12,19 @@ public class TasksRepository : ITasksRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Tasks>> GetAllAsync(){
-        var tasks = await _context.Tasks.ToListAsync();
-        return tasks;
+    public async Task<IEnumerable<Tasks>> GetAllAsync(string? status = null)
+{
+    IQueryable<Tasks> query = _context.Tasks;
+
+    if (!string.IsNullOrEmpty(status))
+    {
+        query = query.Where(t => t.Status == status);
     }
+
+    var tasks = await query.ToListAsync();
+    return tasks;
+}
+
 
     public async Task<Tasks?> GetByIdAsync(int id){
         var task = await _context.Tasks.FindAsync(id);
