@@ -2,7 +2,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using ToDo.Core.Context;
 using ToDo.Core.Models;
 using ToDo.Infrastructure.DTO;
 
@@ -44,51 +43,61 @@ namespace ToDo.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateTaskDto createTaskDto)
         {
-            var task = _mapper.Map<Tasks>(createTaskDto);
-            if (task == null)
-            {
-                return BadRequest("Task is null");
-            }
-            try
-            {
-                await _tasksRepository.AddAsync(task);
-            }
-            catch (DbUpdateException ex)
-            {
-                if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("CHK_Status"))
+            if(ModelState.IsValid){
+                var task = _mapper.Map<Tasks>(createTaskDto);
+                if (task == null)
                 {
-                    return BadRequest("Invalid Task Status. Allowed statuses: To do, In Progress, Done.");
+                    return BadRequest("Task is null");
                 }
+                try
+                {
+                    await _tasksRepository.AddAsync(task);
+                }
+                catch (DbUpdateException ex)
+                {
+                    if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("CHK_Status"))
+                    {
+                        return BadRequest("Invalid Task Status. Allowed statuses: To do, In Progress, Done.");
+                    }
 
-                return StatusCode(500, "An error occurred while saving the task. Please try again later.");
+                    return StatusCode(500, "An error occurred while saving the task. Please try again later.");
+                }
+                var taskDto = _mapper.Map<TaskDto>(task);
+                return CreatedAtAction(nameof(GetById), new { id = task.Id }, taskDto);
+            }else{
+                return BadRequest(ModelState);
             }
-            var taskDto = _mapper.Map<TaskDto>(task);
-            return CreatedAtAction(nameof(GetById), new { id = task.Id }, taskDto);
+            
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskDto updateTaskDto)
         {
-            var task = _mapper.Map<Tasks>(updateTaskDto);
-            try
-            {
-                task = await _tasksRepository.UpdateAsync(id, task);
-            }
-            catch (DbUpdateException ex)
-            {
-                if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("CHK_Status"))
+            if(ModelState.IsValid){
+                var task = _mapper.Map<Tasks>(updateTaskDto);
+                try
                 {
-                    return BadRequest("Invalid Task Status. Allowed statuses: To do, In Progress, Done.");
+                    task = await _tasksRepository.UpdateAsync(id, task);
+                }
+                catch (DbUpdateException ex)
+                {
+                    if (ex.InnerException is SqlException sqlEx && sqlEx.Message.Contains("CHK_Status"))
+                    {
+                        return BadRequest("Invalid Task Status. Allowed statuses: To do, In Progress, Done.");
+                    }
+
+                    return StatusCode(500, "An error occurred while saving the task. Please try again later.");
+                }
+                if (task == null)
+                {
+                    return NotFound();
                 }
 
-                return StatusCode(500, "An error occurred while saving the task. Please try again later.");
+                return NoContent();
+            }else{
+                return BadRequest(ModelState);
             }
-            if (task == null)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
+            
         }
 
         [HttpDelete("{id}")]
