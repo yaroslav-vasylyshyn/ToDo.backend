@@ -2,7 +2,7 @@ using ToDo.Core.Models;
 
 public interface ITasksRepository
 {
-    Task<IEnumerable<Tasks>> GetAllAsync();
+    Task<IEnumerable<Tasks>> GetAllAsync(string? status);
     Task<Tasks?> GetByIdAsync(int id);
     Task AddAsync(Tasks task);
     Task<Tasks?> UpdateAsync(int id, Tasks task);

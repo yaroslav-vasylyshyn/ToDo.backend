@@ -21,9 +21,9 @@ namespace ToDo.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] string? status = null)
         {
-            var tasks = await _tasksRepository.GetAllAsync();
+            var tasks = await _tasksRepository.GetAllAsync(status);
             var tasksDto = _mapper.Map<List<TaskDto>>(tasks);
             return Ok(tasksDto);
         }
